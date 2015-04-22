@@ -36,7 +36,7 @@
 
 #include <gst/gst.h>
 #include <gst/base/gstbasetransform.h>
-#include "gstmyelement.h"
+#include "gsthttpcontrol.h"
 
 GST_DEBUG_CATEGORY_STATIC (gst_my_element_debug_category);
 #define GST_CAT_DEFAULT gst_my_element_debug_category

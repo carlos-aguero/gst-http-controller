@@ -17,23 +17,23 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef _GST_MY_ELEMENT_H_
-#define _GST_MY_ELEMENT_H_
+#ifndef _GST_HTTPCONTROL_H_
+#define _GST_HTTPCONTROL_H_
 
 #include <gst/base/gstbasetransform.h>
 
 G_BEGIN_DECLS
 
-#define GST_TYPE_MY_ELEMENT   (gst_my_element_get_type())
-#define GST_MY_ELEMENT(obj)   (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_MY_ELEMENT,GstMyElement))
-#define GST_MY_ELEMENT_CLASS(klass)   (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_MY_ELEMENT,GstMyElementClass))
-#define GST_IS_MY_ELEMENT(obj)   (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_MY_ELEMENT))
-#define GST_IS_MY_ELEMENT_CLASS(obj)   (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_MY_ELEMENT))
+#define GST_TYPE_HTTPCONTROL   (gst_my_element_get_type())
+#define GST_HTTPCONTROL(obj)   (G_TYPE_CHECK_INSTANCE_CAST((obj),GST_TYPE_HTTPCONTROL,GstHttpControl))
+#define GST_HTTPCONTROL_CLASS(klass)   (G_TYPE_CHECK_CLASS_CAST((klass),GST_TYPE_HTTPCONTROL,GstHttpControlClass))
+#define GST_IS_HTTPCONTROL(obj)   (G_TYPE_CHECK_INSTANCE_TYPE((obj),GST_TYPE_HTTPCONTROL))
+#define GST_IS_HTTPCONTROL_CLASS(obj)   (G_TYPE_CHECK_CLASS_TYPE((klass),GST_TYPE_HTTPCONTROL))
 
-typedef struct _GstMyElement GstMyElement;
-typedef struct _GstMyElementClass GstMyElementClass;
+typedef struct _GstHttpControl GstHttpControl;
+typedef struct _GstHttpControlClass GstHttpControlClass;
 
-struct _GstMyElement
+struct _GstHttpControl
 {
   GstBaseTransform base_myelement;
 
@@ -53,7 +53,7 @@ struct _GstMyElement
   char response[1024];
 };
 
-struct _GstMyElementClass
+struct _GstHttpControlClass
 {
   GstBaseTransformClass base_myelement_class;
 };

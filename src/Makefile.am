@@ -3,7 +3,7 @@
 ##############################################################################
 # TODO: change libgstplugin.la to something else, e.g. libmysomething.la     #
 ##############################################################################
-plugin_LTLIBRARIES = libgstplugin.la
+plugin_LTLIBRARIES = libgsthttpcontrol.la
 
 ##############################################################################
 # TODO: for the next set of variables, name the prefix if you named the .la, #
@@ -14,13 +14,13 @@ plugin_LTLIBRARIES = libgstplugin.la
 ##############################################################################
 
 # sources used to compile this plug-in
-libgstplugin_la_SOURCES = gsthttpcontrol.c gsthttpcontrol.h
+libgsthttpcontrol_la_SOURCES = gsthttpcontrol.c gsthttpcontrol.h
 
 # compiler and linker flags used to compile this plugin, set in configure.ac
-libgstplugin_la_CFLAGS = $(GST_CFLAGS)
-libgstplugin_la_LIBADD = $(GST_LIBS)
-libgstplugin_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)
-libgstplugin_la_LIBTOOLFLAGS = --tag=disable-static
+libgsthttpcontrol_la_CFLAGS = $(GST_CFLAGS)
+libgsthttpcontrol_la_LIBADD = $(GST_LIBS)
+libgsthttpcontrol_la_LDFLAGS = $(GST_PLUGIN_LDFLAGS)
+libgsthttpcontrol_la_LIBTOOLFLAGS = --tag=disable-static
 
 # headers we need but don't want installed
 noinst_HEADERS = gsthttpcontrol.h

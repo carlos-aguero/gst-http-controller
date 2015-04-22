@@ -1,9 +1,7 @@
-# gst-basetransform
-Gstreamer 1.0 element using GstBaseTransform class
+# gst-http-controller
 
-BaseTransform element created using: gst-element-maker my_element basetransform
-
-Modified later, based on the documentation available at: http://gstreamer.freedesktop.org/data/doc/gstreamer/head/gstreamer-libs/html/GstBaseTransform.html
+Autogenerate:
+./autogen.sh
 
 Compile: 
 make

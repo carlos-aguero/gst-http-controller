@@ -38,6 +38,16 @@
 #include <gst/base/gstbasetransform.h>
 #include "gsthttpcontrol.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/types.h> 
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netdb.h>
+#include <arpa/inet.h>
+#include <err.h>
+
 GST_DEBUG_CATEGORY_STATIC (gst_my_element_debug_category);
 #define GST_CAT_DEFAULT gst_my_element_debug_category
 
@@ -90,6 +100,8 @@ static GstFlowReturn gst_my_element_transform (GstBaseTransform * trans,
     GstBuffer * inbuf, GstBuffer * outbuf);
 static GstFlowReturn gst_my_element_transform_ip (GstBaseTransform * trans,
     GstBuffer * buf);
+void gst_hls_demux_updates_loop (GstMyElement * myelement);
+
 
 enum
 {
@@ -180,9 +192,67 @@ gst_my_element_class_init (GstMyElementClass * klass)
 
 }
 
+void gst_http_server_loop(GstMyElement * myelement)
+{
+  GST_INFO_OBJECT (myelement, "INIT Web Server");
+
+  while (1) {
+
+    int one = 1, client_fd;
+    struct sockaddr_in svr_addr, cli_addr;
+    socklen_t sin_len = sizeof(cli_addr);
+
+    GST_INFO_OBJECT (myelement, "Element Init"); 
+ 
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) {
+      GST_ERROR_OBJECT (myelement, "Can't open socket");
+    }
+ 
+    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(int));
+ 
+    int port = 8080;
+    svr_addr.sin_family = AF_INET;
+    svr_addr.sin_addr.s_addr = INADDR_ANY;
+    svr_addr.sin_port = htons(port);
+ 
+    if (bind(sock, (struct sockaddr *) &svr_addr, sizeof(svr_addr)) == -1) {
+      close(sock);
+      GST_ERROR_OBJECT (myelement, "can't bind");
+    }
+ 
+    listen(sock, 5);
+    while (1) {
+      client_fd = accept(sock, (struct sockaddr *) &cli_addr, &sin_len);
+      GST_INFO_OBJECT (myelement, "Got Connection");
+   
+      if (client_fd == -1) {
+        GST_ERROR_OBJECT (myelement, "Can't Accept");
+        continue;
+      }
+
+      GST_ERROR_OBJECT (myelement, "sizeof response: %i", sizeof(myelement->response));
+      write(client_fd, myelement->response, sizeof(myelement->response) - 1); 
+      close(client_fd);
+    }
+  }
+}
+
 static void
 gst_my_element_init (GstMyElement * myelement)
 {
+
+  /* http server init */
+  g_rec_mutex_init (&myelement->updates_lock);
+  myelement->updates_task =
+      gst_task_new ((GstTaskFunction) gst_http_server_loop, myelement, NULL);
+  gst_task_set_lock (myelement->updates_task, &myelement->updates_lock);
+  g_mutex_init (&myelement->updates_timed_lock);
+  gst_task_start (myelement->updates_task);
+
+  myelement->parent_info = FALSE;
+  myelement->iterated_elements_index = 0;
+
 }
 
 void
@@ -478,7 +548,66 @@ gst_my_element_transform_ip (GstBaseTransform * trans, GstBuffer * buf)
 {
   GstMyElement *myelement = GST_MY_ELEMENT (trans);
 
-  GST_DEBUG_OBJECT (myelement, "transform_ip");
+
+  if (!myelement->parent_info)
+  {
+    GST_DEBUG_OBJECT (myelement, "transform_ip");
+
+    char a[2048] = "HTTP/1.1 200 OK\r\n \
+Content-Type: text/html; charset=UTF-8\r\n\r\n \
+<!DOCTYPE html><html><head><title>Pipeline Structure</title> \
+<style>body { background-color: #111 } \
+h1 { font-size:4cm; text-align: center; color: black; \
+ text-shadow: 0 0 2mm red}</style></head> \
+<body><h1>";
+    char b[1024] = "Pipeline Elements: ";
+    char c[1024] = "</h1></body></html>\r\n";
+
+    GstObject *parent = gst_element_get_parent(myelement);
+    GST_INFO_OBJECT (myelement, "Element parent pointer: 0x%p", parent);
+    myelement->parent_info = TRUE;
+
+    myelement->it = gst_bin_iterate_elements (GST_BIN(parent));
+
+    /* iterator size is not returning the amount of iterated elements */
+    while (gst_iterator_next (myelement->it, &myelement->elem) == GST_ITERATOR_OK) 
+    {
+//      GST_INFO_OBJECT(myelement, "Iterator size: %i", myelement->it->size);
+//      GST_INFO_OBJECT(myelement, "Object Name: %s", gst_element_get_name (g_value_get_object(&myelement->elem)));
+//      strcat(b, gst_element_get_name(g_value_get_object(&myelement->elem)));
+      myelement->iterated_elements[myelement->iterated_elements_index] = g_value_get_object(&myelement->elem);
+      myelement->iterated_elements_index++;
+    }
+
+    /*
+     * First iterated elements are the ones at the "right" of the pipeline 
+     * this is why we are doing index--
+     */
+    myelement->iterated_elements_index--;
+    for (myelement->iterated_elements_index; myelement->iterated_elements_index >= 0; myelement->iterated_elements_index--)
+    {
+      GST_INFO_OBJECT(myelement, "Element Named %s, Index: %i", gst_element_get_name(myelement->iterated_elements[myelement->iterated_elements_index]), myelement->iterated_elements_index);
+
+      /* Concatenate element name into web server */
+      strcat(b, gst_element_get_name(myelement->iterated_elements[myelement->iterated_elements_index]));
+      strcat(b, " ");
+    }
+
+    g_value_unset(&myelement->elem);
+
+    strcat(a,b);
+    strcat(a,c);
+    strcpy(myelement->response, a);
+    
+/*    strcpy(myelement->response, "HTTP/1.1 200 OK\r\n \
+Content-Type: text/html; charset=UTF-8\r\n\r\n \
+<!DOCTYPE html><html><head><title>Pipeline Structure</title> \
+<style>body { background-color: #111 } \
+h1 { font-size:4cm; text-align: center; color: black; \
+ text-shadow: 0 0 2mm red}</style></head> \
+<body><h1>TRANSFORM_IP</h1></body></html>\r\n");*/
+
+  }
 
   return GST_FLOW_OK;
 }

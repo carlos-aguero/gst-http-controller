@@ -1,4 +1,5 @@
-# GStreamer-web-plugin
+# GStreamer-web-plugin - webplugin-v0.4
+
 
 GStreamer element that creates a filter element capable of exposing all the pipeline elements in a WebServer (), it is possible to modify the elements properties from the web page
 
